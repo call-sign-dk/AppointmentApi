@@ -64,3 +64,4 @@ C:\Users\deyanesh.k_disprz\Documents\T1_Boiler\AppointmentApp\AppointmentApi\obj
 C:\Users\deyanesh.k_disprz\Documents\T1_Boiler\AppointmentApp\AppointmentApi\obj\Debug\net8.0\AppointmentApi.pdb
 C:\Users\deyanesh.k_disprz\Documents\T1_Boiler\AppointmentApp\AppointmentApi\obj\Debug\net8.0\AppointmentApi.genruntimeconfig.cache
 C:\Users\deyanesh.k_disprz\Documents\T1_Boiler\AppointmentApp\AppointmentApi\obj\Debug\net8.0\ref\AppointmentApi.dll
+C:\Users\deyanesh.k_disprz\Documents\T1_Boiler\AppointmentApp\AppointmentApi\obj\Debug\net8.0\AppointmentApi.sourcelink.json
