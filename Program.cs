@@ -1,6 +1,11 @@
 using AppointmentApi.Business;
-
+using AppointmentApi.Data;
+using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
+
+//register dbcontext
+builder.Services.AddDbContext<AppointmentsDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add services to the container.
 builder.Services.AddControllers();  // Add support for Controllers
@@ -25,3 +30,4 @@ app.UseAuthorization();
 app.MapControllers();  // Map controller routes
 
 app.Run();
+///Commit before resuming frontend

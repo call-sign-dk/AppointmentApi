@@ -1,7 +1,6 @@
 using AppointmentApi.Business;
 using AppointmentApi.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 
 namespace AppointmentApi.Controllers
 {
@@ -16,44 +15,80 @@ namespace AppointmentApi.Controllers
             _appointmentBL = appointmentBL;
         }
 
-        // GET: api/appointment
+        // ✅ GET: api/appointment?date=2025-09-16
+        /// <summary>
+        /// Get all appointments, or filter by date (YYYY-MM-DD).
+        /// </summary>
         [HttpGet]
-        public IEnumerable<Appointment> Get()
+        public async Task<IActionResult> Get([FromQuery] DateTime? date)
         {
-            return _appointmentBL.GetAllAppointments();
+            if (date.HasValue)
+            {
+                // Fetch only appointments for this date from DB
+                var filtered = await _appointmentBL.GetAppointmentsByDateAsync(date.Value);
+                return Ok(filtered);
+            }
+
+            var allAppointments = await _appointmentBL.GetAllAppointmentsAsync();
+            return Ok(allAppointments);
         }
 
-        // GET: api/appointment/{id}
+        // ✅ GET: api/appointment/{id}
         [HttpGet("{id}")]
-        public ActionResult<Appointment> Get(int id)
+        public async Task<IActionResult> Get(int id)
         {
-            var appointment = _appointmentBL.GetAppointmentById(id);
+            var appointment = await _appointmentBL.GetAppointmentByIdAsync(id);
             if (appointment == null)
             {
                 return NotFound();
             }
-            return appointment;
+            return Ok(appointment);
         }
 
-        // POST: api/appointment
+        // ✅ POST: api/appointment
         [HttpPost]
-        public ActionResult Post([FromBody] Appointment appointment)
+        public async Task<IActionResult> Post([FromBody] Appointment appointment)
         {
-            _appointmentBL.AddAppointment(appointment);
+            // Validate that StartTime < EndTime
+            if (appointment.StartTime >= appointment.EndTime)
+            {
+                return BadRequest(new
+                {
+                    message = "EndTime must be later than StartTime."
+                });
+            }
+
+            var (success, conflicts) = await _appointmentBL.AddAppointmentAsync(appointment);
+
+            if (!success)
+            {
+                return Conflict(new
+                {
+                    message = "Appointment time conflicts with an existing booking.",
+                    conflicts = conflicts.Select(c => new
+                    {
+                        c.Id,
+                        c.Title,
+                        c.Description,
+                        c.StartTime,
+                        c.EndTime
+                    })
+                });
+            }
+
             return CreatedAtAction(nameof(Get), new { id = appointment.Id }, appointment);
         }
 
-        // DELETE: api/appointment/{id}
+        // ✅ DELETE: api/appointment/{id}
         [HttpDelete("{id}")]
-        public ActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var appointment = _appointmentBL.GetAppointmentById(id);
-            if (appointment == null)
+            var deleted = await _appointmentBL.DeleteAppointmentAsync(id);
+            if (!deleted)
             {
                 return NotFound();
             }
 
-            _appointmentBL.DeleteAppointment(id);
             return NoContent();
         }
     }
