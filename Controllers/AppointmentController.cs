@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AppointmentApi.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class AppointmentController : ControllerBase
     {
         private readonly IAppointmentBL _appointmentBL;
@@ -15,81 +15,124 @@ namespace AppointmentApi.Controllers
             _appointmentBL = appointmentBL;
         }
 
-        // ✅ GET: api/appointment?date=2025-09-16
-        /// <summary>
-        /// Get all appointments, or filter by date (YYYY-MM-DD).
-        /// </summary>
+        // GET: api/Appointment
         [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] DateTime? date)
+        public async Task<ActionResult<IEnumerable<AppointmentDTO>>> Get([FromQuery] DateTime? date)
         {
+            IEnumerable<Appointment> appointments;
+            
             if (date.HasValue)
             {
-                // Fetch only appointments for this date from DB
-                var filtered = await _appointmentBL.GetAppointmentsByDateAsync(date.Value);
-                return Ok(filtered);
+                appointments = await _appointmentBL.GetAppointmentsByDateAsync(date.Value);
+            }
+            else
+            {
+                appointments = await _appointmentBL.GetAllAppointmentsAsync();
             }
 
-            var allAppointments = await _appointmentBL.GetAllAppointmentsAsync();
-            return Ok(allAppointments);
+            // Convert to DTO with string priority
+            var appointmentDTOs = appointments.Select(a => new AppointmentDTO
+            {
+                Id = a.Id,
+                Title = a.Title,
+                Description = a.Description,
+                StartTime = a.StartTime,
+                EndTime = a.EndTime,
+                Priority = a.PriorityString // Use the string representation
+            });
+
+            return Ok(appointmentDTOs);
         }
 
-        // ✅ GET: api/appointment/{id}
+        // GET: api/Appointment/5
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public async Task<ActionResult<AppointmentDTO>> Get(int id)
         {
             var appointment = await _appointmentBL.GetAppointmentByIdAsync(id);
+            
             if (appointment == null)
             {
                 return NotFound();
             }
-            return Ok(appointment);
+
+            // Convert to DTO with string priority
+            var appointmentDTO = new AppointmentDTO
+            {
+                Id = appointment.Id,
+                Title = appointment.Title,
+                Description = appointment.Description,
+                StartTime = appointment.StartTime,
+                EndTime = appointment.EndTime,
+                Priority = appointment.PriorityString // Use the string representation
+            };
+
+            return Ok(appointmentDTO);
         }
 
-        // ✅ POST: api/appointment
+        // POST: api/Appointment
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Appointment appointment)
+        public async Task<ActionResult<AppointmentDTO>> Post([FromBody] AppointmentDTO appointmentDTO)
         {
-            // Validate that StartTime < EndTime
-            if (appointment.StartTime >= appointment.EndTime)
+            if (!ModelState.IsValid)
             {
-                return BadRequest(new
-                {
-                    message = "EndTime must be later than StartTime."
-                });
+                return BadRequest(ModelState);
             }
+
+            var appointment = new Appointment
+            {
+                Title = appointmentDTO.Title,
+                Description = appointmentDTO.Description,
+                StartTime = appointmentDTO.StartTime,
+                EndTime = appointmentDTO.EndTime
+            };
+
+            // Set priority using the string representation
+            appointment.PriorityString = appointmentDTO.Priority ?? "low";
 
             var (success, conflicts) = await _appointmentBL.AddAppointmentAsync(appointment);
-
+            
             if (!success)
             {
-                return Conflict(new
-                {
-                    message = "Appointment time conflicts with an existing booking.",
-                    conflicts = conflicts.Select(c => new
-                    {
-                        c.Id,
-                        c.Title,
-                        c.Description,
-                        c.StartTime,
-                        c.EndTime
-                    })
-                });
+                return Conflict(new { message = "Time slot already booked", conflicts });
             }
 
-            return CreatedAtAction(nameof(Get), new { id = appointment.Id }, appointment);
+            // Convert back to DTO with string priority
+            var createdAppointmentDTO = new AppointmentDTO
+            {
+                Id = appointment.Id,
+                Title = appointment.Title,
+                Description = appointment.Description,
+                StartTime = appointment.StartTime,
+                EndTime = appointment.EndTime,
+                Priority = appointment.PriorityString // Use the string representation
+            };
+
+            return CreatedAtAction(nameof(Get), new { id = appointment.Id }, createdAppointmentDTO);
         }
 
-        // ✅ DELETE: api/appointment/{id}
+        // DELETE: api/Appointment/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _appointmentBL.DeleteAppointmentAsync(id);
-            if (!deleted)
+            var success = await _appointmentBL.DeleteAppointmentAsync(id);
+            
+            if (!success)
             {
                 return NotFound();
             }
 
             return NoContent();
         }
+    }
+
+    // DTO to handle string representation of priority
+    public class AppointmentDTO
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public string? Priority { get; set; } = "low";
     }
 }

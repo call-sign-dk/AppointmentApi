@@ -15,7 +15,7 @@ namespace AppointmentApi.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
+            
             // Configure Appointment table
             modelBuilder.Entity<Appointment>(entity =>
             {
@@ -23,6 +23,11 @@ namespace AppointmentApi.Data
                 entity.Property(a => a.Title).IsRequired();
                 entity.Property(a => a.StartTime).IsRequired();
                 entity.Property(a => a.EndTime).IsRequired();
+                
+                // Explicitly configure Priority field as int
+                entity.Property(a => a.Priority)
+                    .IsRequired()
+                    .HasDefaultValue(0); // 0 = low
             });
         }
     }

@@ -7,7 +7,7 @@ namespace AppointmentApi.Business
     public class AppointmentBL : IAppointmentBL
     {
         private readonly AppointmentsDbContext _context;
-
+        
         public AppointmentBL(AppointmentsDbContext context)
         {
             _context = context;
@@ -19,9 +19,9 @@ namespace AppointmentApi.Business
         public async Task<IEnumerable<Appointment>> GetAllAppointmentsAsync()
         {
             return await _context.Appointments
-                                 .AsNoTracking()
-                                 .OrderBy(a => a.StartTime)
-                                 .ToListAsync();
+                             .AsNoTracking()
+                             .OrderBy(a => a.StartTime)
+                             .ToListAsync();
         }
 
         /// <summary>
@@ -30,10 +30,10 @@ namespace AppointmentApi.Business
         public async Task<IEnumerable<Appointment>> GetAppointmentsByDateAsync(DateTime date)
         {
             return await _context.Appointments
-                                 .AsNoTracking()
-                                 .Where(a => a.StartTime.Date == date.Date)
-                                 .OrderBy(a => a.StartTime)
-                                 .ToListAsync();
+                             .AsNoTracking()
+                             .Where(a => a.StartTime.Date == date.Date)
+                             .OrderBy(a => a.StartTime)
+                             .ToListAsync();
         }
 
         /// <summary>
@@ -58,14 +58,20 @@ namespace AppointmentApi.Business
         /// </summary>
         public async Task<(bool Success, List<Appointment> Conflicts)> AddAppointmentAsync(Appointment appointment)
         {
+            // Handle priority conversion if needed
+            if (appointment.Priority < 0 || appointment.Priority > 2)
+            {
+                appointment.Priority = 0; // Default to low if invalid
+            }
+
             var conflicts = await _context.Appointments
                 .Where(a => (appointment.StartTime < a.EndTime) &&
                             (appointment.EndTime > a.StartTime))
                 .ToListAsync();
-
+                
             if (conflicts.Any())
                 return (false, conflicts);
-
+                
             _context.Appointments.Add(appointment);
             await _context.SaveChangesAsync();
             return (true, new List<Appointment>());
@@ -76,14 +82,20 @@ namespace AppointmentApi.Business
         /// </summary>
         public bool AddAppointment(Appointment appointment)
         {
+            // Handle priority conversion if needed
+            if (appointment.Priority < 0 || appointment.Priority > 2)
+            {
+                appointment.Priority = 0; // Default to low if invalid
+            }
+
             bool conflict = _context.Appointments.Any(a =>
                 (appointment.StartTime < a.EndTime) &&
                 (appointment.EndTime > a.StartTime)
             );
-
+            
             if (conflict)
                 return false;
-
+                
             _context.Appointments.Add(appointment);
             _context.SaveChanges();
             return true;
@@ -96,7 +108,7 @@ namespace AppointmentApi.Business
         {
             var appointment = await _context.Appointments.FindAsync(id);
             if (appointment == null) return false;
-
+            
             _context.Appointments.Remove(appointment);
             await _context.SaveChangesAsync();
             return true;
@@ -109,7 +121,7 @@ namespace AppointmentApi.Business
         {
             var appointment = _context.Appointments.Find(id);
             if (appointment == null) return false;
-
+            
             _context.Appointments.Remove(appointment);
             _context.SaveChanges();
             return true;
