@@ -68,6 +68,64 @@ namespace AppointmentApi.Controllers
 
             return Ok(appointmentDTO);
         }
+        // PUT: api/Appointment/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(int id, [FromBody] AppointmentDTO appointmentDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (id != appointmentDTO.Id)
+            {
+                return BadRequest("ID mismatch between route and appointment data");
+            }
+
+            // Check if appointment exists
+            var existingAppointment = await _appointmentBL.GetAppointmentByIdAsync(id);
+            if (existingAppointment == null)
+            {
+                return NotFound();
+            }
+
+            // Create appointment object from DTO
+            var appointment = new Appointment
+            {
+                Id = appointmentDTO.Id,
+                Title = appointmentDTO.Title,
+                Description = appointmentDTO.Description,
+                StartTime = appointmentDTO.StartTime,
+                EndTime = appointmentDTO.EndTime
+            };
+
+            // Set priority using the string representation
+            appointment.PriorityString = appointmentDTO.Priority ?? "low";
+
+            var (success, conflicts) = await _appointmentBL.UpdateAppointmentAsync(appointment);
+            
+            if (!success)
+            {
+                if (conflicts.Any())
+                {
+                    return Conflict(new { message = "Time slot already booked", conflicts });
+                }
+                return NotFound();
+            }
+
+            // Convert back to DTO with string priority for response
+            var updatedAppointmentDTO = new AppointmentDTO
+            {
+                Id = appointment.Id,
+                Title = appointment.Title,
+                Description = appointment.Description,
+                StartTime = appointment.StartTime,
+                EndTime = appointment.EndTime,
+                Priority = appointment.PriorityString
+            };
+
+            return Ok(updatedAppointmentDTO);
+        }
 
         // POST: api/Appointment
         [HttpPost]

@@ -13,6 +13,9 @@ namespace AppointmentApi.Business
         Appointment? GetAppointmentById(int id);
         Task<(bool Success, List<Appointment> Conflicts)> AddAppointmentAsync(Appointment appointment);
         bool AddAppointment(Appointment appointment);
+      // Add only this to the interface
+       Task<(bool Success, List<Appointment> Conflicts)> UpdateAppointmentAsync(Appointment appointment);
+
         Task<bool> DeleteAppointmentAsync(int id);
         bool DeleteAppointment(int id);
     }

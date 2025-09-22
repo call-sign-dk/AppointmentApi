@@ -113,6 +113,40 @@ namespace AppointmentApi.Business
             await _context.SaveChangesAsync();
             return true;
         }
+        // Implement only the async version
+        public async Task<(bool Success, List<Appointment> Conflicts)> UpdateAppointmentAsync(Appointment appointment)
+        {
+              // Check if appointment exists
+             var existingAppointment = await _context.Appointments.FindAsync(appointment.Id);
+            if (existingAppointment == null)
+                return (false, new List<Appointment>());
+                
+            // Handle priority conversion if needed
+            if (appointment.Priority < 0 || appointment.Priority > 2)
+            {
+                appointment.Priority = 0; // Default to low if invalid
+            }
+
+            // Check for conflicts with other appointments (excluding the current one)
+            var conflicts = await _context.Appointments
+                .Where(a => a.Id != appointment.Id && 
+                            (appointment.StartTime < a.EndTime) &&
+                            (appointment.EndTime > a.StartTime))
+                .ToListAsync();
+                    
+            if (conflicts.Any())
+                return (false, conflicts);
+            
+            // Update properties
+            existingAppointment.Title = appointment.Title;
+            existingAppointment.Description = appointment.Description;
+            existingAppointment.StartTime = appointment.StartTime;
+            existingAppointment.EndTime = appointment.EndTime;
+            existingAppointment.Priority = appointment.Priority;
+            
+            await _context.SaveChangesAsync();
+            return (true, new List<Appointment>());
+        }
 
         /// <summary>
         /// Synchronous delete for appointment by ID.
