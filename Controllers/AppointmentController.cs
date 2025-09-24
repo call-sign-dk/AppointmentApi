@@ -19,29 +19,45 @@ namespace AppointmentApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AppointmentDTO>>> Get([FromQuery] DateTime? date)
         {
-            IEnumerable<Appointment> appointments;
-            
-            if (date.HasValue)
+            try
             {
-                appointments = await _appointmentBL.GetAppointmentsByDateAsync(date.Value);
-            }
-            else
-            {
-                appointments = await _appointmentBL.GetAllAppointmentsAsync();
-            }
+                IEnumerable<Appointment> appointments;
+                
+                if (date.HasValue)
+                {
+                    // Calculate the first day of the previous month
+                    DateTime startDate = new DateTime(date.Value.Year, date.Value.Month, 1).AddMonths(-1);
+                    
+                    // Calculate the last day of the next month
+                    DateTime endDate = new DateTime(date.Value.Year, date.Value.Month, 1).AddMonths(2).AddDays(-1);
+                    
+                    // Get appointments for the three-month period
+                    appointments = await _appointmentBL.GetAppointmentsByDateRangeAsync(startDate, endDate);
+                }
+                else
+                {
+                    // If no date is provided, return all appointments
+                    appointments = await _appointmentBL.GetAllAppointmentsAsync();
+                }
 
-            // Convert to DTO with string priority
-            var appointmentDTOs = appointments.Select(a => new AppointmentDTO
-            {
-                Id = a.Id,
-                Title = a.Title,
-                Description = a.Description,
-                StartTime = a.StartTime,
-                EndTime = a.EndTime,
-                Priority = a.PriorityString // Use the string representation
-            });
+                // Convert to DTO with string priority
+                var appointmentDTOs = appointments.Select(a => new AppointmentDTO
+                {
+                    Id = a.Id,
+                    Title = a.Title,
+                    Description = a.Description,
+                    StartTime = a.StartTime,
+                    EndTime = a.EndTime,
+                    Priority = a.PriorityString // Use the string representation
+                });
 
-            return Ok(appointmentDTOs);
+                return Ok(appointmentDTOs);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                return StatusCode(500, new { message = "An error occurred while retrieving appointments", error = ex.Message });
+            }
         }
 
         // GET: api/Appointment/5

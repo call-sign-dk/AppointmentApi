@@ -37,6 +37,18 @@ namespace AppointmentApi.Business
         }
 
         /// <summary>
+        /// Fetches all appointments within a date range (inclusive).
+        /// </summary>
+        public async Task<IEnumerable<Appointment>> GetAppointmentsByDateRangeAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.Appointments
+                             .AsNoTracking()
+                             .Where(a => a.StartTime.Date >= startDate.Date && a.StartTime.Date <= endDate.Date)
+                             .OrderBy(a => a.StartTime)
+                             .ToListAsync();
+        }
+
+        /// <summary>
         /// Finds appointment by its ID asynchronously.
         /// </summary>
         public async Task<Appointment?> GetAppointmentByIdAsync(int id)
@@ -113,6 +125,7 @@ namespace AppointmentApi.Business
             await _context.SaveChangesAsync();
             return true;
         }
+        
         // Implement only the async version
         public async Task<(bool Success, List<Appointment> Conflicts)> UpdateAppointmentAsync(Appointment appointment)
         {
