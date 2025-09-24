@@ -9,13 +9,12 @@ namespace AppointmentApi.Business
     {
         Task<IEnumerable<Appointment>> GetAllAppointmentsAsync();
         Task<IEnumerable<Appointment>> GetAppointmentsByDateAsync(DateTime date);
+        Task<IEnumerable<Appointment>> GetAppointmentsByDateRangeAsync(DateTime startDate, DateTime endDate);
         Task<Appointment?> GetAppointmentByIdAsync(int id);
         Appointment? GetAppointmentById(int id);
         Task<(bool Success, List<Appointment> Conflicts)> AddAppointmentAsync(Appointment appointment);
         bool AddAppointment(Appointment appointment);
-      // Add only this to the interface
-       Task<(bool Success, List<Appointment> Conflicts)> UpdateAppointmentAsync(Appointment appointment);
-
+        Task<(bool Success, List<Appointment> Conflicts)> UpdateAppointmentAsync(Appointment appointment);
         Task<bool> DeleteAppointmentAsync(int id);
         bool DeleteAppointment(int id);
     }
